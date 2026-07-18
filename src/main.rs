@@ -9,7 +9,7 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .insert_resource(ClearColor(Color::BLACK))
         .add_plugins((StartupPlugin, InputPlugin))
-        .add_systems(Update, (print_body_info, render_bodies))
+        .add_systems(Update, (render_bodies, sync_body_transforms))
         .run();
 }
 
@@ -29,14 +29,15 @@ impl Plugin for InputPlugin {
     }
 }
 
-fn handle_input(input: Res<ButtonInput<KeyCode>>, time: Res<Time>, mut commands: Commands) {
+fn handle_input(input: Res<ButtonInput<KeyCode>>, time: Res<Time>, mut bodies: Query<&mut Body>) {
     if input.pressed(KeyCode::KeyA) {
-        commands.spawn(Body {
-            name: "body".to_string(),
-            mass: 1e24,
-            mu: 1.2,
-            position: Vec3::new(0.0, 384400.0, 0.0),
-        });
+        for mut body in &mut bodies {
+            body.position.x -= 1000.0;
+        }
+    } else if input.pressed(KeyCode::KeyD) {
+        for mut body in &mut bodies {
+            body.position.x += 1000.0;
+        }
     }
 }
 
@@ -72,6 +73,12 @@ fn setup_bodies(mut commands: Commands) {
 fn print_body_info(bodies: Query<&Body>) {
     for body in &bodies {
         println!("{} -> {}", body.name, body.mass);
+    }
+}
+
+fn sync_body_transforms(mut bodies: Query<(&Body, &mut Transform), Changed<Body>>) {
+    for (body, mut transform) in &mut bodies {
+        transform.translation = body.position * POSITION_SCALE;
     }
 }
 
