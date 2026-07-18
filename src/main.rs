@@ -2,14 +2,18 @@ use bevy::prelude::*;
 
 fn main() {
     App::new()
-        .add_systems(Startup, setup_bodies)
-        .add_systems(Update, hello_world)
+        .add_plugins(DefaultPlugins)
+        .add_plugins(StartupPlugin)
         .add_systems(Update, print_body_info)
         .run();
 }
 
-fn hello_world() {
-    println!("hello world!");
+pub struct StartupPlugin;
+
+impl Plugin for StartupPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_systems(Startup, setup_bodies);
+    }
 }
 
 #[derive(Component)]
