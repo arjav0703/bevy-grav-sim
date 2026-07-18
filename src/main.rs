@@ -3,7 +3,7 @@ use bevy::prelude::*;
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
-        .add_plugins(StartupPlugin)
+        .add_plugins((StartupPlugin, InputPlugin))
         .add_systems(Update, print_body_info)
         .run();
 }
@@ -13,6 +13,24 @@ pub struct StartupPlugin;
 impl Plugin for StartupPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, (setup_camera, setup_bodies));
+    }
+}
+
+pub struct InputPlugin;
+
+impl Plugin for InputPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_systems(Update, handle_input);
+    }
+}
+
+fn handle_input(input: Res<ButtonInput<KeyCode>>, time: Res<Time>, mut commands: Commands) {
+    if input.pressed(KeyCode::KeyA) {
+        commands.spawn(Body {
+            name: "body".to_string(),
+            mass: 1e24,
+            position: Position { x: 10.0, y: 10.0 },
+        });
     }
 }
 
