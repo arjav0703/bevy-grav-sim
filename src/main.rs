@@ -3,6 +3,7 @@ use bevy::prelude::*;
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
+        .insert_resource(ClearColor(Color::BLACK))
         .add_plugins((StartupPlugin, InputPlugin))
         .add_systems(Update, print_body_info)
         .run();
