@@ -3,14 +3,32 @@ use particular::prelude::*;
 
 const POSITION_SCALE: f32 = 1.0 / 1000.0;
 const MASS_SCALE: f64 = 1e19;
+const GRAVITATIONAL_CONSTANT: f64 = 3e-14;
 
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
         .insert_resource(ClearColor(Color::BLACK))
         .add_plugins((StartupPlugin, InputPlugin))
-        .add_systems(Update, (render_bodies, sync_body_transforms))
+        .add_systems(
+            Update,
+            (update_bodies, sync_body_transforms, render_bodies).chain(),
+        )
         .run();
+}
+
+fn update_bodies(mut bodies: Query<&mut Body>, time: Res<Time>) {
+    let dt = 100.0;
+    for (acceleration, mut body) in bodies
+        .iter()
+        .accelerations(&mut sequential::BruteForceScalar)
+        .zip(&mut bodies)
+    {
+        let body = &mut *body;
+        println!("{:?}", Vec3::from(acceleration) * dt);
+        body.velocity += Vec3::from(acceleration) * dt;
+        body.position += body.velocity * dt;
+    }
 }
 
 pub struct StartupPlugin;
@@ -49,6 +67,7 @@ struct Body {
     mass: f64,
     mu: f32,
     position: Vec3,
+    velocity: Vec3,
 }
 
 fn setup_camera(mut commands: Commands) {
@@ -56,24 +75,30 @@ fn setup_camera(mut commands: Commands) {
 }
 
 fn setup_bodies(mut commands: Commands) {
+    let earth_mass = 5.924e24;
+    let moon_mass = 7.348e22;
+    let distance = 384400.0_f64;
+
+    let earth_mu = GRAVITATIONAL_CONSTANT * earth_mass;
+    let orbital_speed = (earth_mu / distance).sqrt() as f32;
+
+    let moon_velocity = Vec3::new(0.0, orbital_speed, 0.0);
+    let earth_velocity = -moon_velocity * (moon_mass / earth_mass) as f32;
+
     commands.spawn(Body {
         name: "earth".to_string(),
-        mass: 5.924e24,
-        mu: 1.2,
+        mass: earth_mass,
+        mu: earth_mu as f32,
         position: Vec3::new(0.0, 0.0, 0.0),
+        velocity: earth_velocity,
     });
     commands.spawn(Body {
         name: "moon".to_string(),
-        mass: 7.348e22,
-        mu: 1.2,
-        position: Vec3::new(384400.0, 0.0, 0.0),
+        mass: moon_mass,
+        mu: (GRAVITATIONAL_CONSTANT * moon_mass) as f32,
+        position: Vec3::new(distance as f32, 0.0, 0.0),
+        velocity: moon_velocity,
     });
-}
-
-fn print_body_info(bodies: Query<&Body>) {
-    for body in &bodies {
-        println!("{} -> {}", body.name, body.mass);
-    }
 }
 
 fn sync_body_transforms(mut bodies: Query<(&Body, &mut Transform), Changed<Body>>) {
