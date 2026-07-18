@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use particular::prelude::*;
 
 fn main() {
     App::new()
@@ -30,22 +31,20 @@ fn handle_input(input: Res<ButtonInput<KeyCode>>, time: Res<Time>, mut commands:
         commands.spawn(Body {
             name: "body".to_string(),
             mass: 1e24,
-            position: Position { x: 10.0, y: 10.0 },
+            mu: 1.2,
+            position: Vec3::new(0.0, 0.0, 0.0),
         });
     }
 }
 
+#[derive(Particle)]
+#[dim(3)]
 #[derive(Component)]
 struct Body {
     name: String,
     mass: f64,
-    position: Position,
-}
-
-#[derive(Component)]
-struct Position {
-    x: f32,
-    y: f32,
+    mu: f32,
+    position: Vec3,
 }
 
 fn setup_camera(mut commands: Commands) {
@@ -66,15 +65,14 @@ fn setup_bodies(mut commands: Commands) {
     commands.spawn(Body {
         name: "earth".to_string(),
         mass: 5.924e24,
-        position: Position { x: 0.0, y: 0.0 },
+        mu: 1.2,
+        position: Vec3::new(0.0, 0.0, 0.0),
     });
     commands.spawn(Body {
         name: "moon".to_string(),
         mass: 7.348e22,
-        position: Position {
-            x: 384400.0,
-            y: 0.0,
-        },
+        mu: 1.2,
+        position: Vec3::new(384400.0, 0.0, 0.0),
     });
 }
 
