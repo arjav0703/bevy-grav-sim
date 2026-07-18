@@ -12,7 +12,7 @@ pub struct StartupPlugin;
 
 impl Plugin for StartupPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, setup_bodies);
+        app.add_systems(Startup, (setup_camera, setup_bodies));
     }
 }
 
@@ -27,6 +27,20 @@ struct Body {
 struct Position {
     x: f32,
     y: f32,
+}
+
+fn setup_camera(mut commands: Commands) {
+    commands.spawn(Camera2d);
+
+    commands.spawn((
+        Text2d::new("Hello world!"),
+        TextFont {
+            font_size: FontSize::Px(120.0),
+            ..default()
+        },
+        TextColor(Color::WHITE),
+        Transform::from_translation(Vec3::ZERO),
+    ));
 }
 
 fn setup_bodies(mut commands: Commands) {
