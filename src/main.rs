@@ -1,12 +1,15 @@
 use bevy::prelude::*;
 use particular::prelude::*;
 
+const POSITION_SCALE: f32 = 1.0 / 1000.0;
+const MASS_SCALE: f64 = 1e19;
+
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
         .insert_resource(ClearColor(Color::BLACK))
         .add_plugins((StartupPlugin, InputPlugin))
-        .add_systems(Update, print_body_info)
+        .add_systems(Update, (print_body_info, render_bodies))
         .run();
 }
 
@@ -32,7 +35,7 @@ fn handle_input(input: Res<ButtonInput<KeyCode>>, time: Res<Time>, mut commands:
             name: "body".to_string(),
             mass: 1e24,
             mu: 1.2,
-            position: Vec3::new(0.0, 0.0, 0.0),
+            position: Vec3::new(0.0, 384400.0, 0.0),
         });
     }
 }
@@ -49,16 +52,6 @@ struct Body {
 
 fn setup_camera(mut commands: Commands) {
     commands.spawn(Camera2d);
-
-    commands.spawn((
-        Text2d::new("Hello world!"),
-        TextFont {
-            font_size: FontSize::Px(120.0),
-            ..default()
-        },
-        TextColor(Color::WHITE),
-        Transform::from_translation(Vec3::ZERO),
-    ));
 }
 
 fn setup_bodies(mut commands: Commands) {
@@ -79,5 +72,21 @@ fn setup_bodies(mut commands: Commands) {
 fn print_body_info(bodies: Query<&Body>) {
     for body in &bodies {
         println!("{} -> {}", body.name, body.mass);
+    }
+}
+
+fn render_bodies(
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
+    bodies: Query<(Entity, &Body), Added<Body>>,
+) {
+    for (entity, body) in &bodies {
+        let radius = ((body.mass / MASS_SCALE) as f32).cbrt().max(4.0);
+        commands.entity(entity).insert((
+            Mesh2d(meshes.add(Circle::new(radius))),
+            MeshMaterial2d(materials.add(Color::WHITE)),
+            Transform::from_translation(body.position * POSITION_SCALE),
+        ));
     }
 }
