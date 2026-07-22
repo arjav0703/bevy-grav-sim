@@ -4,6 +4,8 @@ use particular::prelude::*;
 const POSITION_SCALE: f32 = 1.0 / 1000.0;
 const MASS_SCALE: f64 = 3e18;
 const GRAVITATIONAL_CONSTANT: f64 = 2e-14;
+const SIMULATION_SPEED: f32 = 1000.0;
+const PAN_SPEED: f32 = 100_000.0;
 
 fn main() {
     App::new()
@@ -18,16 +20,17 @@ fn main() {
 }
 
 fn update_bodies(mut bodies: Query<&mut Body>, time: Res<Time>) {
-    let dt = 10.0;
+    let dt = SIMULATION_SPEED * time.delta_secs();
     for (acceleration, mut body) in bodies
         .iter()
         .accelerations(&mut sequential::BruteForceScalar)
         .zip(&mut bodies)
     {
         let body = &mut *body;
-        println!("{:?}", Vec3::from(acceleration) * dt);
-        body.velocity += Vec3::from(acceleration) * dt;
-        body.position += body.velocity * dt;
+        if matches!(body.gravity, Gravity::AffectedByGravity) {
+            body.velocity += Vec3::from(acceleration) * dt;
+            body.position += body.velocity * dt;
+        }
     }
 }
 
@@ -48,13 +51,14 @@ impl Plugin for InputPlugin {
 }
 
 fn handle_input(input: Res<ButtonInput<KeyCode>>, time: Res<Time>, mut bodies: Query<&mut Body>) {
+    let step = PAN_SPEED * time.delta_secs();
     if input.pressed(KeyCode::KeyA) {
         for mut body in &mut bodies {
-            body.position.x -= 1000.0;
+            body.position.x -= step;
         }
     } else if input.pressed(KeyCode::KeyD) {
         for mut body in &mut bodies {
-            body.position.x += 1000.0;
+            body.position.x += step;
         }
     }
 }
@@ -68,6 +72,13 @@ struct Body {
     mu: f32,
     position: Vec3,
     velocity: Vec3,
+    gravity: Gravity,
+}
+
+#[derive(Component)]
+pub enum Gravity {
+    HasGravity,
+    AffectedByGravity,
 }
 
 fn setup_camera(mut commands: Commands) {
@@ -85,12 +96,25 @@ fn setup_bodies(mut commands: Commands) {
     let moon_velocity = Vec3::new(0.0, orbital_speed, 0.0);
     let earth_velocity = -moon_velocity * (moon_mass / earth_mass) as f32;
 
+    let dummy_mass = 2e23;
+    let dummy_body = Body {
+        name: "dummy".to_string(),
+        mass: dummy_mass,
+        mu: (GRAVITATIONAL_CONSTANT * dummy_mass) as f32,
+        position: Vec3::new(-distance as f32, distance as f32, 0.0),
+        velocity: Vec3::new(orbital_speed / 1.4, 0.0, 0.0),
+        gravity: Gravity::HasGravity,
+    };
+
+    commands.spawn(dummy_body);
+
     commands.spawn(Body {
         name: "earth".to_string(),
         mass: earth_mass,
         mu: earth_mu as f32,
         position: Vec3::new(0.0, 0.0, 0.0),
         velocity: earth_velocity,
+        gravity: Gravity::HasGravity,
     });
     commands.spawn(Body {
         name: "moon".to_string(),
@@ -98,6 +122,7 @@ fn setup_bodies(mut commands: Commands) {
         mu: (GRAVITATIONAL_CONSTANT * moon_mass) as f32,
         position: Vec3::new(distance as f32, 0.0, 0.0),
         velocity: moon_velocity,
+        gravity: Gravity::AffectedByGravity,
     });
 }
 
