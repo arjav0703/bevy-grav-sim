@@ -2,8 +2,8 @@ use bevy::prelude::*;
 use particular::prelude::*;
 
 const POSITION_SCALE: f32 = 1.0 / 1000.0;
-const MASS_SCALE: f64 = 1e19;
-const GRAVITATIONAL_CONSTANT: f64 = 3e-14;
+const MASS_SCALE: f64 = 3e18;
+const GRAVITATIONAL_CONSTANT: f64 = 2e-14;
 
 fn main() {
     App::new()
@@ -18,7 +18,7 @@ fn main() {
 }
 
 fn update_bodies(mut bodies: Query<&mut Body>, time: Res<Time>) {
-    let dt = 100.0;
+    let dt = 10.0;
     for (acceleration, mut body) in bodies
         .iter()
         .accelerations(&mut sequential::BruteForceScalar)
@@ -77,7 +77,7 @@ fn setup_camera(mut commands: Commands) {
 fn setup_bodies(mut commands: Commands) {
     let earth_mass = 5.924e24;
     let moon_mass = 7.348e22;
-    let distance = 384400.0_f64;
+    let distance = 334400.0_f64;
 
     let earth_mu = GRAVITATIONAL_CONSTANT * earth_mass;
     let orbital_speed = (earth_mu / distance).sqrt() as f32;
